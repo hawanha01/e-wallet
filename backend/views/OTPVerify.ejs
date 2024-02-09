@@ -1,0 +1,14 @@
+<h1>OTP Verification</h1>
+<%- include('./partials/messages') -%>
+<form action="/users/otpVerify" method="post">
+  <div>
+    <input type="hidden" name="userID" value=<%= locals.userID %> required />
+  </div>
+  <div>
+    <label for="otp">OTP</label>
+    <input type="text" name="otp" placeholder="OTP" required />
+    <button type="submit">Verify</button>
+  </div>
+</form>
+<a href="/users/resendOTP?userID=<%= locals.userID %>">Resend OTP</a>
+<a href="/">Back to Home</a>
