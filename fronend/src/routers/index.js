@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
 import UserRoutes from "./UserRoutes";
 import Dashboard from "../pages/dashboard/Dashboard";
+import PrivateRoute from "./PrivateRoute";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -10,7 +11,7 @@ const router = createBrowserRouter([
   // dashboard
   {
     path: "/dashboard",
-    element: <Dashboard />,
+    element: <PrivateRoute element={<Dashboard />} />,
   },
   // registration routes
   {

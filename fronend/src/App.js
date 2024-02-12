@@ -1,10 +1,13 @@
+import { SkeletonTheme } from "react-loading-skeleton";
 import "./App.css";
 import Welcome from "./pages/welcome/Welcome";
 function App() {
   return (
-    <div className="App">
-      <Welcome />
-    </div>
+    <SkeletonTheme baseColor="#202020" highlightColor="#444">
+      <div className="App">
+        <Welcome />
+      </div>
+    </SkeletonTheme>
   );
 }
 

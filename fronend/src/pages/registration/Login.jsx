@@ -2,8 +2,10 @@ import React from "react";
 import axios from "axios";
 import { Formik } from "formik";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../utils/AuthContext";
 export default function Login() {
   const [loginError, setLoginError] = React.useState("");
+  const { login } = useAuth();
   const navigate = useNavigate();
   const initialValues = { email: "", password: "" };
   return (
@@ -32,7 +34,8 @@ export default function Login() {
               values
             );
             if (response.data.success) {
-              navigate("/dashboard", { state: response.data.user });
+              login(response.data.user);
+              navigate("/dashboard");
             } else {
               setLoginError(response.data.message);
             }

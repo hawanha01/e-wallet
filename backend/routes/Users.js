@@ -5,12 +5,26 @@ const router = express.Router();
 const passport = require("passport");
 const { sendOTPToUser } = require("../utils/mailer");
 const UserOTPVerification = require("../models/UserOTPVerification");
+const Wallet = require("../models/Wallet");
+
+// router.get(":userID", async (req, res) => {
+//   const id = req.query.userID;
+//   try {
+//     const user = await User.findOne({ _id: id });
+//     if (user._id === id) {
+//       res.status(201).json({ success: true, message: "User found", user });
+//     }
+//   } catch (e) {
+//     res.status(401).json({ success: false, message: "User Not found" });
+//   }
+// });
 
 router.get("/logout", (req, res) => {
   req.logOut((err) => {
     if (err) {
       res.status(500).json({ success: false, message: "Error during logout" });
     }
+    req.session.destroy();
     res.status(200).json({ success: true, message: "logout successfully" });
   });
 });
@@ -55,6 +69,7 @@ router.post("/login", (req, res, next) => {
           .status(500)
           .json({ success: false, message: "Internal Server Error" });
       }
+      req.session.user = user;
       return res
         .status(200)
         .json({ success: true, message: "Login successful", user });
@@ -100,10 +115,12 @@ router.post("/register", (req, res) => {
     res.status(401).json({ success: false, message: "Invalid Credantials" });
   }
 
-  User.findOne({ email: email }).then((user) => {
+  User.findOne({ email: email }).then(async (user) => {
     if (user) {
       res.status(400).json({ success: false, message: "User already Exist" });
     } else {
+      const createdWallet = new Wallet({});
+      await createdWallet.save();
       const newUser = new User({
         name,
         email,
@@ -113,6 +130,7 @@ router.post("/register", (req, res) => {
         contact,
         profileImage,
         address,
+        wallet: createdWallet._id,
       });
       bcrypt.genSalt(10, (error, salt) =>
         bcrypt.hash(newUser.password, salt, (err, hash) => {

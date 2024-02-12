@@ -24,7 +24,10 @@ app.use(
     secret: "secret",
     resave: true,
     saveUninitialized: true,
-    cookie: { secure: false },
+    cookie: {
+      secure: false,
+      expires: new Date(Date.now() + 3600000),
+    },
   })
 );
 
