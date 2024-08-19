@@ -12,7 +12,7 @@ export default function OTPVerification() {
   const handleResendOTP = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/users/resendOTP?userID=${location.state}`
+        `${process.env.REACT_APP_BACKEND_URL}/users/resendOTP?userID=${location.state}`
       );
       if (response.data.success) {
         setOTPError(response.data.message);
@@ -38,7 +38,7 @@ export default function OTPVerification() {
         onSubmit={async (values, { setSubmitting, resetForm }) => {
           try {
             const response = await axios.post(
-              "http://localhost:5000/users/otpVerify",
+              `${process.env.REACT_APP_BACKEND_URL}/users/otpVerify`,
               values
             );
             if (response.data.success) {

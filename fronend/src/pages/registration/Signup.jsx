@@ -77,7 +77,7 @@ export default function Signup() {
         onSubmit={async (values, { resetForm }) => {
           try {
             const response = await axios.post(
-              "http://localhost:5000/users/register",
+              `${process.env.REACT_APP_BACKEND_URL}/users/register`,
               values
             );
             if (response.data.success) {

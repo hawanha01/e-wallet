@@ -28,7 +28,7 @@ export default function Login() {
         onSubmit={async (values, { setSubmitting }) => {
           try {
             const response = await axios.post(
-              "http://localhost:5000/users/login",
+              `${process.env.REACT_APP_BACKEND_URL}/users/login`,
               values
             );
             if (response.data.success) {

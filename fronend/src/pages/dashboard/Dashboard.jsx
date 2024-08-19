@@ -9,7 +9,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const handleLogout = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/users/logout");
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/logout`);
       if (response.data.success) {
         logout();
         navigate("/users/login");
