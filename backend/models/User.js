@@ -1,71 +1,93 @@
-const mongoose = require("mongoose");
-
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  gender: {
-    type: String,
-    required: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  cnic: {
-    type: String,
-    required: true,
-    unique: true,
-    validate: {
-      validator: function (value) {
-        return /^\d{13}$/.test(value);
+"use strict";
+const { Model } = require("sequelize");
+module.exports = (sequelize, DataTypes) => {
+  class User extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
+      User.belongsTo(models.Wallet, {
+        foreignKey: "walletId",
+        as: "wallet",
+      });
+    }
+  }
+  User.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        allowNull: false,
+        primaryKey: true,
       },
-      message: "CNIC must be a 13-digit number.",
-    },
-  },
-  contact: {
-    type: String,
-    required: true,
-    unique: true,
-    validate: {
-      validator: function (value) {
-        return /^\d{11}$/.test(value);
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
-      message: "Phone number must be an 11-digit number.",
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+          customEmailValidator(value) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+              throw new Error("Email format is invalid");
+            }
+          },
+        },
+      },
+      gender: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      cnic: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+          is: /^\d{13}$/,
+        },
+      },
+      contact: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+          is: /^\d{11}$/,
+        },
+      },
+      profileImage: {
+        type: DataTypes.STRING,
+      },
+      address: {
+        type: DataTypes.STRING,
+      },
+      verified: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      walletId: {
+        type: DataTypes.UUID,
+        references: {
+          model: "Wallets",
+          key: "id",
+        },
+        allowNull: false,
+      },
     },
-  },
-  profileImage: {
-    type: String,
-  },
-  address: {
-    type: String,
-  },
-  verified: {
-    type: Boolean,
-    default: false,
-  },
-  wallet: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    required: true,
-    default: Date.now(),
-  },
-  updatedAt: {
-    type: Date,
-    required: true,
-    default: Date.now(),
-  },
-});
-
-const User = mongoose.model("User", userSchema);
-module.exports = User;
+    {
+      sequelize,
+      modelName: "User",
+      tableName: "users",
+      timestamps: true,
+    }
+  );
+  return User;
+};

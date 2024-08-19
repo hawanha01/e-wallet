@@ -1,11 +1,9 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const User = require("../models/User");
 const router = express.Router();
 const passport = require("passport");
 const { sendOTPToUser } = require("../utils/mailer");
-const UserOTPVerification = require("../models/UserOTPVerification");
-const Wallet = require("../models/Wallet");
+const { User, UserOTPVerification, Wallet } = require("../models");
 
 // router.get(":userID", async (req, res) => {
 //   const id = req.query.userID;
@@ -37,8 +35,8 @@ router.get("/resendOTP", async (req, res) => {
         .status(400)
         .json({ success: false, message: "Empty values are not allowed" });
     }
-    await UserOTPVerification.deleteMany({ userId: userID });
-    const user = await User.findOne({ _id: userID });
+    await UserOTPVerification.destroy({ where: { userId: userID } });
+    const user = await User.findByPk(userID);
     sendOTPToUser(userID, user.email, user.name);
     res
       .status(200)
@@ -77,7 +75,7 @@ router.post("/login", (req, res, next) => {
   })(req, res, next);
 });
 
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
   const {
     name,
     email,
@@ -89,18 +87,21 @@ router.post("/register", (req, res) => {
     password,
     confirmPassword,
   } = req.body;
+
   if (
-    name === "" ||
-    email === "" ||
-    gender === "" ||
-    cnic === "" ||
-    profileImage === "" ||
-    contact === "" ||
-    address === "" ||
-    password === "" ||
-    confirmPassword === ""
+    !name ||
+    !email ||
+    !gender ||
+    !cnic ||
+    !profileImage ||
+    !contact ||
+    !address ||
+    !password ||
+    !confirmPassword
   ) {
-    res.status(400).json({ success: false, message: "Invalid Credantials" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid Credentials" });
   }
 
   if (
@@ -112,50 +113,41 @@ router.post("/register", (req, res) => {
     profileImage.length < 1 ||
     password !== confirmPassword
   ) {
-    res.status(401).json({ success: false, message: "Invalid Credantials" });
+    return res
+      .status(401)
+      .json({ success: false, message: "Invalid Credentials" });
   }
 
-  User.findOne({ email: email }).then(async (user) => {
-    if (user) {
-      res.status(400).json({ success: false, message: "User already Exist" });
-    } else {
-      const createdWallet = new Wallet({});
-      await createdWallet.save();
-      const newUser = new User({
-        name,
-        email,
-        gender,
-        password,
-        cnic,
-        contact,
-        profileImage,
-        address,
-        wallet: createdWallet._id,
-      });
-      bcrypt.genSalt(10, (error, salt) =>
-        bcrypt.hash(newUser.password, salt, (err, hash) => {
-          if (err) {
-            res
-              .status(500)
-              .json({ success: false, message: "Internal Server Error" });
-          }
-          newUser.password = hash;
-          newUser
-            .save()
-            .then(() => {
-              sendOTPToUser(newUser._id, newUser.email, newUser.name);
-              const userID = newUser._id;
-              res
-                .status(201)
-                .json({ success: true, message: "User registered", userID });
-            })
-            .catch((e) => {
-              res.status(500).json({ success: false, message: e.message });
-            });
-        })
-      );
+  try {
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User already exists" });
     }
-  });
+
+    const createdWallet = await Wallet.create({});
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      name,
+      email,
+      gender,
+      password: hashedPassword,
+      cnic,
+      contact,
+      profileImage,
+      address,
+      walletId: createdWallet.id,
+    });
+
+    sendOTPToUser(newUser.id, newUser.email, newUser.name);
+    res
+      .status(201)
+      .json({ success: true, message: "User registered", userID: newUser.id });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
 });
 
 router.post("/otpVerify", async (req, res) => {
@@ -168,7 +160,7 @@ router.post("/otpVerify", async (req, res) => {
       });
     }
     const userOTPVerificationRecord = await UserOTPVerification.findOne({
-      userId: userID,
+      where: { userId: userID },
     });
     if (!userOTPVerificationRecord) {
       res.status(401).json({
@@ -179,7 +171,7 @@ router.post("/otpVerify", async (req, res) => {
       const { expireAt } = userOTPVerificationRecord;
       const hashedOTP = userOTPVerificationRecord.otp;
       if (expireAt < Date.now()) {
-        await UserOTPVerification.deleteMany({ userID });
+        await UserOTPVerification.destroy({ where: { userId: userID } });
         res.status(400).json({
           success: false,
           message: "Code is expired Request again for verification code",
@@ -194,8 +186,8 @@ router.post("/otpVerify", async (req, res) => {
                 message: "Wrong OTP",
               });
             } else {
-              await User.updateOne({ _id: userID }, { verified: true });
-              await UserOTPVerification.deleteMany({ userId: userID });
+              await User.update({ verified: true }, { where: { id: userID } });
+              await UserOTPVerification.destroy({ where: { userId: userID } });
               res.status(200).json({
                 success: true,
                 message: "Email Verified",

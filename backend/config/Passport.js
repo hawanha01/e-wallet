@@ -1,7 +1,7 @@
 const LocalStrategy = require("passport-local").Strategy;
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const User = require("../models/User");
+const { User } = require("../models");
 
 module.exports = function (passport) {
   passport.use(
@@ -9,7 +9,7 @@ module.exports = function (passport) {
       { usernameField: "email" },
       async (email, password, done) => {
         try {
-          const user = await User.findOne({ email: email });
+          const user = await User.findOne({ where: { email } });
           if (!user) return done(null, false, "Email not Exist");
           bcrypt.compare(password, user.password, (err, isMatch) => {
             if (err) throw err;
@@ -32,7 +32,7 @@ module.exports = function (passport) {
 
   passport.deserializeUser(async (id, done) => {
     try {
-      const user = await User.findById(id);
+      const user = await User.findByPk(id);
       done(null, user);
     } catch (err) {
       done(err, null);

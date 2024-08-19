@@ -6,14 +6,21 @@ const session = require("express-session");
 const passport = require("passport");
 const cors = require("cors");
 const router = require("./routes/index");
-const dbConfig = require("./config/DBConfig");
+const db = require("./models");
 require("dotenv").config();
 require("./config/Passport")(passport);
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 const app = express();
 
-// Mongoo DB connection
-dbConfig();
+// DB connection
+db.sequelize
+  .authenticate()
+  .then(() => {
+    console.log("Connection has been established successfully.");
+  })
+  .catch((err) => {
+    console.error("Unable to connect to the database:", err);
+  });
 
 // cors enable
 app.use(cors());
